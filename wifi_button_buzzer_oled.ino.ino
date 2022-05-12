@@ -12,11 +12,10 @@ const String roomName = "Server room 1";
 int smsTimeOut = 0;
 #define numberCount 1
 String recievers[numberCount] = { "+359883286555" };
+int rainDropSensorPin = A1;
 
-SoftwareSerial mySerial(3, 2); //SIM800L Tx & Rx is connected to Arduino #3 & #2
 dht DHT;
-int rainDropSensorPin = A1; // Raindrop sensor Pin
-
+SoftwareSerial mySerial(3, 2); //SIM800L Tx & Rx is connected to Arduino #3 & #2
 
 const int BUTTON = 7; // Button sensor Pin
 const int buzzer = 5; // Buzzer Pin
@@ -64,19 +63,17 @@ void displayTempHumid()
   display.print("Temperature: " + String(DHT.temperature, 2) + " C");
 }
 
-void sendSMStoNumber(String number, String msg)
+void sendSMStoNumbers(String msg)
 {
-  delay(3000);
-  mySerial.println("AT"); //Once the handshake test is successful, it will back to OK
-  updateSerial();
-  String senderString = "AT+CMGS=\"" + number + "\"";
-  mySerial.println(senderString);
-  updateSerial();
-  mySerial.print(msg); //text content
-  updateSerial();
-  mySerial.write(26);
-  Serial.println("AT+CMGS=\"" + number + "\"");
-  delay(3000);
+  for (int i = 0; i < numberCount; i++)
+  {
+    mySerial.println("AT"); updateSerial(); //Once the handshake test is successful, it will back to OK
+    mySerial.println("AT+CMGS=\"" + number + "\""); updateSerial();
+    mySerial.print(msg); updateSerial(); //text content
+    mySerial.write(26);
+    Serial.println("AT+CMGS=\"" + number + "\"");
+    delay(3000);
+  }
 }
 
 void loop()
@@ -87,50 +84,34 @@ void loop()
 
   Serial.print("Water sensor value: ");
   Serial.println(analogRead(rainDropSensorPin));
-  
 
   if (DHT.temperature > 28 && smsTimeOut <= 0)
   {
-    for (int i = 0; i < numberCount; i++)
-    {
-      sendSMStoNumber(recievers[i], "Temperature is over 28C !!!");
-    }
+    sendSMStoNumbers("Temperature is over 28C !!!");
     smsTimeOut = 10000;
   }
-  else if (digitalRead(BUTTON) == HIGH) {
+  else if (digitalRead(BUTTON) == HIGH) 
+  {
     tone(buzzer, 1000); // Send 1KHz sound signal...
     delay(1000);
     noTone(buzzer);     // Stop sound...
-    delay(1000);
-    for (int i = 0; i < numberCount; i++)
-    {
-      sendSMStoNumber(recievers[i], "Current humidity = " + String(DHT.humidity, 2) + "%" + "Current temperature = " + String(DHT.temperature, 2) + "C");
-    }
+    sendSMStoNumbers("Current humidity = " + String(DHT.humidity, 2) + "%" + "Current temperature = " + String(DHT.temperature, 2) + "C");
   }
   else if (analogRead(rainDropSensorPin) < 700 && smsTimeOut <= 0)
   {
-    for (int i = 0; i < numberCount; i++)
-    {
-      sendSMStoNumber(recievers[i], "Water sensor activated !!!");
-    }
+    sendSMStoNumbers("Water sensor activated !!!");
     smsTimeOut = 10000;
   }
   else if (smsTimeOut > 0)
-  {
-    smsTimeOut --;
-  }
+  {smsTimeOut --;}
 }
 
 void updateSerial()
 {
   delay(500);
   while (Serial.available())
-  {
-    mySerial.write(Serial.read()); //Forward what Serial received to Software Serial Port
-  }
+  {mySerial.write(Serial.read());} //Forward what Serial received to Software Serial Port
 
   while (mySerial.available())
-  {
-    Serial.write(mySerial.read()); //Forward what Software Serial received to Serial Port
-  }
+  {Serial.write(mySerial.read());} //Forward what Software Serial received to Serial Port
 }
