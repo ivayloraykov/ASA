@@ -68,10 +68,10 @@ void sendSMStoNumbers(String msg)
   for (int i = 0; i < numberCount; i++)
   {
     mySerial.println("AT"); updateSerial(); //Once the handshake test is successful, it will back to OK
-    mySerial.println("AT+CMGS=\"" + number + "\""); updateSerial();
+    mySerial.println("AT+CMGS=\"" + recievers[i] + "\""); updateSerial();
     mySerial.print(msg); updateSerial(); //text content
     mySerial.write(26);
-    Serial.println("AT+CMGS=\"" + number + "\"");
+    Serial.println("AT+CMGS=\"" + recievers[i] + "\"");
     delay(3000);
   }
 }
